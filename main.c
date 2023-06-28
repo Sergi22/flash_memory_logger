@@ -1,42 +1,50 @@
-#include "flash_memory.h"
+#include "logger_simulator\flash_memory.h"
+#include "logger_simulator\mem_logger.h"
 #include "stdbool.h"
 #include "stdint.h"
+#include "stdio.h"
+#include "string.h"
 
 
 // Sample usage
 int main() {
     // Initialize flash memory module
-    flash_memory_init();
-    
-    // Simulate writing data to flash memory
-    uint8_t write_data[] = { 0xAA, 0xBB, 0xCC, 0xDD };
-    flash_memory_write(0, write_data, sizeof(write_data));
-    
-    // Simulate erasing a page
-    flash_memory_erase(0);
-    
-    // Simulate reading data from flash memory
-    uint8_t read_data[sizeof(write_data)];
-    flash_memory_read(0, read_data, sizeof(read_data));
-    
-    // Compare read data with the original written data
-    bool is_data_equal = true;
-    for (uint8_t i = 0; i < sizeof(write_data); i++) {
-        printf("Write vs read data: %02X vs %02X\r\n", write_data[i], read_data[i]);
-        if (read_data[i] != write_data[i]) {
-            is_data_equal = false;
+    if (flash_memory_init() != FLASH_ERR_OK)
+    {
+        printf("Failed to init flash memory\r\n");
+    }
+
+    log_entry_t log_entry_write = { .logId = 0, .data = {0xAA, 0, 0, 0, 0, 0xFF}};
+    log_entry_t log_entry_read = {0};
+
+    uint16_t logs_to_write = 8195;
+
+    do{
+
+        if (!memory_logger_write(&log_entry_write))
+        {
+            printf("Failed to write log\r\n");
             break;
         }
-    }
+
+        log_entry_write.logId++;
+
+        // For visual detection, while checking binary file
+        memset(&log_entry_write.data[1], (log_entry_write.logId & 0xFF), 4);
+    } while (--logs_to_write);
     
-    if (is_data_equal) {
-        printf("Mock framework test passed!\n");
-    } else {
-        printf("Mock framework test failed!\n");
+    if (memory_logger_read(3, &log_entry_read))
+    {
+        printf("read log ID %u, data %04X\r\n", log_entry_read.logId, (uint32_t*)&log_entry_read.data[0]);
+    }
+
+    if (!memory_logger_read(8194, &log_entry_read))
+    {
+        printf("failed to read log id 8194\r\n");
     }
     
     // Deinitialize flash memory module
-    flash_memory_deinit();
+    // flash_memory_deinit();
 
     printf("Program executed succesfully\n");
     

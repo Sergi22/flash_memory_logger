@@ -7,9 +7,12 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${file}",
+                "${workspaceFolder}/*.c",
+                // "${workspaceFolder}/*.h",
+                "${workspaceFolder}/logger_simulator/*.c",
+                "${workspaceFolder}/logger_simulator/*.h",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${workspaceFolder}\\main.exe"
             ],
             "options": {
                 "cwd": "${fileDirname}"
