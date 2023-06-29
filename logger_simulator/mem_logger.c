@@ -39,7 +39,14 @@ bool memory_logger_write(const log_entry_t* log_entry) {
     // Check if there is enough memory to write the log entry
     if (used_blocks_count == total_blocks) {
 
-        uint8_t erase_page = (current_block * BLOCK_SIZE) % PAGE_SIZE;
+        // move current block tracker to the begining 
+        if (current_block == total_blocks)
+        {
+            current_block = 0;
+        }
+
+        uint8_t erase_page = (current_block * BLOCK_SIZE) / PAGE_SIZE;
+
         // Erase the oldest log page to make room for new logs
         flash_result = flash_memory_erase(erase_page);
         if (flash_result != FLASH_ERR_OK)
@@ -47,22 +54,12 @@ bool memory_logger_write(const log_entry_t* log_entry) {
             printf("Failed to erase flash memory page num %u; Err %02X", erase_page, flash_result);
             return false;
         }
-
-        // move current block tracker to the begining 
-        if (current_block == total_blocks)
-        {
-            current_block = 0;
-        }
         
         // Recalculate used blocks count
         used_blocks_count -= BLOCKS_PER_PAGE;
         start_log_id = start_log_id + LOGS_PER_PAGE;
     }
 
-    if ((current_block * BLOCK_SIZE) <= 32 )
-    {
-        printf("Current adr write %u\r\n", (current_block * BLOCK_SIZE));
-    }
     flash_result = flash_memory_write((current_block * BLOCK_SIZE), log_ptr->raw, LOG_BLOCKS);
     // Write the log entry to flash memory
     if (flash_result == FLASH_ERR_OK) {

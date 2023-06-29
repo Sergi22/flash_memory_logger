@@ -5,8 +5,8 @@
 #include "stdint.h"
 
 typedef struct {
-    unsigned short logId;
-    unsigned char data[6];
+    uint16_t logId;
+    uint8_t data[6];
 } log_entry_t;
 
 bool memory_logger_write(const log_entry_t* log_entry);

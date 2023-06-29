@@ -22,15 +22,14 @@ flash_err_t flash_memory_init(void) {
     if (file) {
         fclose(file);
         remove(flash_memory_file);
-        printf("Open for read\r\n");
     }
 
     // if not, create a new file
     file = fopen(flash_memory_file, "wb");
     if (file) {
         is_initialized = true;
-        printf("createed file\r\n");
         fclose(file);
+        printf("Flash memory initialized\r\n");
     }
     else
     {
@@ -60,11 +59,6 @@ flash_err_t flash_memory_deinit(void) {
  * @return Flash error code indicating the success or failure of the write operation.
  */
 flash_err_t flash_memory_write(uint16_t address, const uint32_t* data, uint16_t num_blocks) {
-
-    if (((data[0] >> 16) & 0xFF) > 8192 )
-    {
-        printf("Attempt to write LOG ID %04X, addr %u\r\n", data[0], address);
-    }
     
     if (is_initialized == false) {
         printf("Error: Flash memory module is not initialized.\n");
@@ -86,7 +80,7 @@ flash_err_t flash_memory_write(uint16_t address, const uint32_t* data, uint16_t 
     // uint16_t block_number = address / BLOCK_SIZE;
     // uint16_t block_offset = address % BLOCK_SIZE;
 
-    FILE* file = fopen(flash_memory_file, "ab");
+    FILE* file = fopen(flash_memory_file, "rb+");
     if (file) {
         fseek(file, address, SEEK_SET);
         fwrite(data, sizeof(uint32_t), num_blocks, file);
@@ -129,7 +123,6 @@ flash_err_t flash_memory_read(uint16_t address, uint32_t* data, uint16_t num_blo
         fseek(file, address, SEEK_SET);
         fread(data, sizeof(uint32_t), num_blocks, file);
         fclose(file);
-        printf("Attempt to read addr %u, data %04X\r\n", address, data[0]);
     }
     else
     {
@@ -151,7 +144,7 @@ flash_err_t flash_memory_erase(uint16_t page_number) {
         return FLASH_ERR_NOT_INITIALIZED;
     }
     
-    FILE* file = fopen(flash_memory_file, "w+");
+    FILE* file = fopen(flash_memory_file, "rb+");
     if (file) {
         fseek(file, page_number * PAGE_SIZE, SEEK_SET);
         uint8_t erase_data[PAGE_SIZE] = {0xFF}; // Data to erase the page
