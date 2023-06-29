@@ -6,10 +6,7 @@
 #include "mem_logger.h"
 #include "string.h"
 
-#define PAGE_SIZE       256
-#define MAX_PAGES       256
 #define LOG_BLOCKS      2
-#define LOG_SIZE        8
 #define BLOCKS_PER_PAGE (PAGE_SIZE / BLOCK_SIZE)
 #define LOGS_PER_MEMORY (MEMORY_SIZE / (BLOCK_SIZE * LOG_BLOCKS))
 #define LOGS_PER_PAGE   (BLOCKS_PER_PAGE / LOG_BLOCKS)
@@ -20,26 +17,32 @@ typedef union
     uint32_t    raw[LOG_BLOCKS];
 } log_t;
 
+
 // Memory utilization tracking
 static uint16_t current_block      = 0;
 static uint16_t used_blocks_count  = 0;
 const static uint16_t total_blocks = MEMORY_SIZE / BLOCK_SIZE;
 const static uint8_t  log_size     = LOG_BLOCKS * BLOCK_SIZE;
 
+// Log ID tracking
 static uint16_t current_log_id = 0;
 static uint16_t start_log_id = 0;
 
-// Write a log entry to flash memory
+/**
+ * @brief Write a log entry to flash memory.
+ *
+ * @param log_entry Pointer to the log entry to be written.
+ * @return True if the write operation is successful, False otherwise.
+ */
 bool memory_logger_write(const log_entry_t* log_entry) {
     const log_t * log_ptr = (log_t *) log_entry;
 
-    // printf("Writing LOG ID %02X", log_ptr->log_entry.logId);
     flash_err_t flash_result;
 
     // Check if there is enough memory to write the log entry
     if (used_blocks_count == total_blocks) {
 
-        // move current block tracker to the begining 
+        // move current block tracker to the beginning 
         if (current_block == total_blocks)
         {
             current_block = 0;
@@ -61,7 +64,7 @@ bool memory_logger_write(const log_entry_t* log_entry) {
     }
 
     flash_result = flash_memory_write((current_block * BLOCK_SIZE), log_ptr->raw, LOG_BLOCKS);
-    // Write the log entry to flash memory
+
     if (flash_result == FLASH_ERR_OK) {
         current_block += LOG_BLOCKS;
         used_blocks_count += LOG_BLOCKS;
@@ -74,12 +77,19 @@ bool memory_logger_write(const log_entry_t* log_entry) {
     return false;
 }
 
+/**
+ * @brief Read a log entry from flash memory based on the log ID.
+ *
+ * @param log_id The ID of the log entry to be read.
+ * @param log_entry Pointer to store the read log entry.
+ * @return True if the read operation is successful, False otherwise.
+ */
 bool memory_logger_read(uint16_t log_id, log_entry_t* log_entry) {
     log_t * log_ptr = (log_t *) log_entry;
 
-    // Check if requested log_id exist in memory
+    // Check if requested log_id exists in memory
     if ((log_id <= current_log_id) && (log_id >= start_log_id)) {
-            // Write the log entry to flash memory
+            
         if (flash_memory_read((log_id % LOGS_PER_MEMORY) * log_size, log_ptr->raw, LOG_BLOCKS) == FLASH_ERR_OK) {
             return true;
         }
@@ -87,4 +97,3 @@ bool memory_logger_read(uint16_t log_id, log_entry_t* log_entry) {
 
     return false;
 }
-
